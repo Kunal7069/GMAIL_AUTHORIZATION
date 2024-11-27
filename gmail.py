@@ -12,10 +12,8 @@ from flask import Flask, request, jsonify
 
 # Scope for Gmail API
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-DROPBOX_ACCESS_TOKEN = "k5RRI0HQU9jFIdQO3Dp32sNnMURnFGRuc8r_Rri298h5uSplHF-P1ATuUI1fQCGVRiDFobDidql9KD5tghHfFJfYfCse9UiIbxpL9C8UAl-UNYJHBiCkQb67mFwaRF5zN-JujYY-1PVJZR3dmTDeZwE8c6bCPaBKapdK4BDOLHMyyo2ySoIVzxzceyf6JZBEH88WjcccTcWBORY77CftpR6m829KjIxY5-6J2wn8JAa4ZsFqu6c-Ps8_hkaLXSUbUKOEHQ6nylkf-zAK12YNBAAZz7RFP9dfDm1JdD8I0ywO05uojQ5LYbDLBinNm9LfQIxjKQV6BkuAWs4Zm9eqvfcxss3Kaylk49gNJ2PBDbR3MjwXkVf8tqO848SfDAE6CqdMtJz4hoicF81xVyT7zIASWscHOhhcksT4serkwa6w5cIp__bpkwGAMRPS5euWmf3AunuzNhW1xrPmAT69_wW-4-JUbiiqvJVHTVx9XLPDEOiCbrIj07W64Oku13khejpd8DdKH7c2hpsCQIMRIzuDUPBTUiQ1Ywh01FhPWEAFGaiJ0A-twq9T6AxlAVu0FB-k4Nl3CvmeewatA6NZq4tOTkCbQkW4QgcUUgjx0Jv1Pm3hHesntm7sH2r1mnlH3WRK24DJGxi5-YzSIe_azA2KihF_KtS8a6DgSTIciKwJNiSWeVrk2nPxuiqW7kjktAevD1FWi68OnNrL3s_Kv_kWBTN4zUchGPz_3GLMEFBPnEZw3FCLOY8H6derj1b3zoxTDo48TuUbhxObAlxnB70ugC8k0-Mthwcqbdq1VLUERqNYmrvSrZD_wfBw_3gn20KNy8pjzhHv8-KlbI94CEpbIy6ajNaJV15dfDqT76AhFbAhnrqo-vUxMylY88fmGijxz0fYnllVtzPJEM5L1SBLshZDOSU2AqaR2Gb3T4DDqEN9nwrfkQpDbKCEy4OF_ip9_8Z26g0lnt6Ct5lIyvuLU-VakLXfJ9YnS540I1U2lxwcYQ1mEWydx2hXm6kQtDA0yK3tvbPebZZ_DsV0RibJHPH0klhR4exh_nvnrje19dgeQOr9Rmlec3n9R_aMkWQkPYVx7aYr118MNBoZTcEURFGI7n9w6urPH6_NRfSASFQKVC4TzPOJ59SHunsK9g7T181aNxN8tZqG7LNlzWpBUF5kHyPYz_KUv3v4Me16WTbaVIhBrp6slO9rwZZXeT-2-5Z614GobE-2z-rwMZSfIJ-EXs-puVy0dH_zfkOMH-XqZBr63u5XvP0rQLgsPKY458oZdg6uIg4ZrluUijIwXJ1Q4qS61Yvzje-lqOiNKxnTF12uTfPYBU6o8YHS8SymYE6nXqX6hsQaaJ7BQ85f-Oqrw9Hf_stxrmXdWw2yRZ6rTtcK04ijDIBDoKB1IXsCH8hctBgmaIKje788q2KYiSKKM8wd2kITK9c10Vb_qrcEYiJA5DFcDAGT_8qy8tIGoFX-QAziuHd-_yVLJXFA.u.ls"
-DROPBOX_ACCESS_TOKEN = DROPBOX_ACCESS_TOKEN[::-1]
 app = Flask(__name__)
-
+port = 80
 def get_email_body(message):
     """Extract and decode the email body."""
     parts = message["payload"].get("parts")
@@ -34,7 +32,7 @@ def get_email_body(message):
         return decoded_body
     return "No body content available."
 
-def upload_to_dropbox(file_path, file_content):
+def upload_to_dropbox(file_path, file_content,DROPBOX_ACCESS_TOKEN):
     """Upload the file to Dropbox and return the shared link URL."""
     dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
     
@@ -95,7 +93,8 @@ def gmail_api():
 
     if 'DROPBOX_URL' not in data:
         return jsonify({"error": "DROPBOX_URL is required in the request body"}), 400
-    
+    dropbox_acsess_token = data['DROPBOX_ACCESS_TOKEN']
+    dropbox_acsess_token=dropbox_acsess_token[::-1]
     dropbox_url = data['DROPBOX_URL']
     filename = data['filename']
     
@@ -103,7 +102,7 @@ def gmail_api():
         url="https://www.dropbox.com/scl/fi/16g2xj1m1rzqdesm8sci6/credential.json?rlkey=u1r8aygafibzv9agjhocex5lh&st=hrlbvv5k&dl=1"
         creds = get_credential_from_dropbox(url)
         creds_json = creds.to_json()
-        dropbox_link = upload_to_dropbox(filename, creds_json)
+        dropbox_link = upload_to_dropbox(filename, creds_json,dropbox_acsess_token)
         return jsonify({"Link": dropbox_link}), 201
         
     creds = get_token_from_url(dropbox_url)
@@ -140,5 +139,5 @@ def gmail_api():
     except HttpError as error:
         return jsonify({"error": f"An error occurred: {error}"}), 500
 
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=port, debug=True)
