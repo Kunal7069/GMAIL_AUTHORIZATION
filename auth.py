@@ -1,17 +1,17 @@
 from flask import Flask, jsonify, request
-import os
-import requests
-import io
-import dropbox
-import json
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+import os
+import requests
+import io
+import dropbox
+import json
 
 app = Flask(__name__)
-
+port=80
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
@@ -150,5 +150,5 @@ def fetch_emails():
 
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=port, debug=True)
