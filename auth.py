@@ -4,6 +4,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+import base64
 import os
 import requests
 import io
@@ -14,6 +15,24 @@ app = Flask(__name__)
 port=80
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+
+def get_email_body(message):
+    """Extract and decode the email body."""
+    parts = message["payload"].get("parts")
+    if not parts:
+        data = message["payload"]["body"].get("data")
+    else:
+        for part in parts:
+            if part["mimeType"] == "text/plain": 
+                data = part["body"].get("data")
+                break
+        else:
+            data = None 
+
+    if data:
+        decoded_body = base64.urlsafe_b64decode(data).decode("utf-8")
+        return decoded_body
+    return "No body content available."
 
 def get_token_from_url(url):
     response = requests.get(url)
@@ -116,32 +135,29 @@ def fetch_emails():
         # Call the Gmail API
         service = build("gmail", "v1", credentials=creds)
 
-        # Get the list of message IDs
-        results = service.users().messages().list(userId="me", maxResults=10).execute()
+        results = service.users().messages().list(userId="me", labelIds=["INBOX"], q="is:unread").execute()
         messages = results.get("messages", [])
 
         if not messages:
-            return jsonify({"emails": []}), 200
+            return jsonify({"message": "No new messages."})
 
-        # Fetch detailed information for each message
-        emails = []
-        for message in messages:
+        message_data = []
+        for message in messages[:10]:  # Limit to the first 2 messages
             msg = service.users().messages().get(userId="me", id=message["id"]).execute()
-            snippet = msg.get("snippet", "")  # Get the email snippet (summary)
-            payload = msg.get("payload", {})
-            headers = payload.get("headers", [])
+            msg_details = {"Message ID": msg['id']}
 
-            # Extract useful headers like Subject and From
-            email_data = {"snippet": snippet}
-            for header in headers:
-                if header["name"] == "Subject":
-                    email_data["subject"] = header["value"]
+            for header in msg["payload"]["headers"]:
                 if header["name"] == "From":
-                    email_data["from"] = header["value"]
-            
-            emails.append(email_data)
+                    msg_details["From"] = header['value']
+                if header["name"] == "Subject":
+                    msg_details["Subject"] = header['value']
 
-        return jsonify({"emails": emails}), 200
+            body = get_email_body(msg)
+            msg_details["Body"] = body
+
+            message_data.append(msg_details)
+
+        return jsonify({"messages": message_data})
 
     except HttpError as error:
         return jsonify({"error": f"An error occurred: {error}"}), 500
