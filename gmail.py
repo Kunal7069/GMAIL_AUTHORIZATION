@@ -94,7 +94,6 @@ def gmail_api():
     if 'DROPBOX_URL' not in data:
         return jsonify({"error": "DROPBOX_URL is required in the request body"}), 400
     dropbox_acsess_token = data['DROPBOX_ACCESS_TOKEN']
-    dropbox_acsess_token=dropbox_acsess_token[::-1]
     dropbox_url = data['DROPBOX_URL']
     filename = data['filename']
     
