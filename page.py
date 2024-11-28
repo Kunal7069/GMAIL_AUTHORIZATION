@@ -10,7 +10,7 @@ client_secrets_file = "cred.json"  # Path to your OAuth 2.0 credentials
 scopes = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 # The URL for the redirect after authorization
-redirect_uri = "https://your-render-url.com/oauth2callback"  # Replace with your deployed Render URL
+redirect_uri = "https://gmail-server-page.onrender.com/oauth2callback"  # Replace with your deployed Render URL
 
 # Set up the flow for OAuth2
 flow = Flow.from_client_secrets_file(client_secrets_file, scopes=scopes)
