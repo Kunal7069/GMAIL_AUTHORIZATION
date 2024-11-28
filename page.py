@@ -4,7 +4,7 @@ from google_auth_oauthlib.flow import Flow
 import json
 
 app = Flask(__name__)
-
+port=5000
 # OAuth2 credentials
 client_secrets_file = "cred.json"  # Path to your OAuth 2.0 credentials
 scopes = ["https://www.googleapis.com/auth/gmail.readonly"]
@@ -57,4 +57,4 @@ def oauth2callback():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0', port=port, debug=True)
