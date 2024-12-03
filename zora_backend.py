@@ -125,7 +125,7 @@ def authorize_code():
         
         # Fetch credentials using the provided Dropbox URL
         flow = get_credential_from_dropbox(dropbox_cred_url)
-        flow.redirect_uri = "https://auth-code.onrender.com"
+        flow.redirect_uri = "https://zora-backend-zjs0.onrender.com"
         
         # Fetch the token using the authorization code
         flow.fetch_token(code=code)
