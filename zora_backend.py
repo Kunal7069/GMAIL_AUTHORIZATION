@@ -96,7 +96,7 @@ def get_auth_url():
         flow = get_credential_from_dropbox(dropbox_cred_url)
         
         # Generate the authorization URL
-        flow.redirect_uri = "https://auth-code.onrender.com"
+        flow.redirect_uri = "https://zora-backend-zjs0.onrender.com"
         auth_url, _ = flow.authorization_url(prompt="consent")
         
         return jsonify({"auth_url": auth_url}), 200
@@ -108,7 +108,7 @@ def get_auth_url():
 def authorize_code():
     try:
         body = request.json
-        response = requests.get("https://auth-code.onrender.com/latest-code")
+        response = requests.get("https://zora-backend-zjs0.onrender.com/latest-code")
         
         if response.status_code != 200:
             return jsonify({"error": "Failed to fetch authorization code from external service."}), 500
