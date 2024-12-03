@@ -61,6 +61,87 @@ def get_email_body(message):
         return decoded_body
     return "No body content available."
 
+def extract_task(sentence):
+    doc = nlp(sentence)
+    
+    action = None
+    target = None
+    sentence_lower = sentence.lower()
+
+    for synonym in call_synonyms:
+        if synonym in sentence_lower:
+            action = "Call"
+            
+            for ent in doc.ents:
+                if ent.label_ == "PERSON":
+                    target = ent.text
+                    break
+            
+            if not target:
+                for token in doc:
+                    if token.pos_ == "PROPN":
+                        target = token.text
+                        break
+    
+    for synonym in message_synonyms:
+        if synonym in sentence_lower:
+            action = "Message"
+            
+            for ent in doc.ents:
+                if ent.label_ == "PERSON":
+                    target = ent.text
+                    break
+            
+            if not target:
+                for token in doc:
+                    if token.pos_ == "PROPN":
+                        target = token.text
+                    
+
+    for synonym in camera_synonyms:
+        if synonym in sentence_lower:
+            action = "Open the Camera"
+
+    for synonym in calendar_synonyms:
+        if synonym in sentence_lower:
+            action = "Open the Calendar"
+
+    for synonym in settings_synonyms:
+        if synonym in sentence_lower:
+            action = "Open the Settings"
+
+    for synonym in youtube_synonyms:
+        if synonym in sentence_lower:
+            action = "Open the Youtube"
+    
+    for synonym in playstore_synonyms:
+        if synonym in sentence_lower:
+            action = "Open the PlayStore"
+          
+    for synonym in email_synonyms:
+        if synonym in sentence_lower:
+            action = "Read the Latest Mail"
+            
+    for synonym in reply_synonyms:
+        if synonym in sentence_lower:
+            action = "Reply the Latest Mail"
+
+    for synonym in subject_mail_synonyms:
+        if synonym in sentence_lower:
+            action = "Read the Mail with Given Subject"
+    
+    result = []
+    if action and target:
+        result.append(action)
+        result.append(target)
+        return result
+    elif action:
+        result.append(action)
+        return result
+    else:
+        result.append("NO ACTION")
+        return result
+
 def get_credential_from_dropbox(dropbox_url):
     """Fetch the credential JSON file from Dropbox using the URL."""
     response = requests.get(dropbox_url)
