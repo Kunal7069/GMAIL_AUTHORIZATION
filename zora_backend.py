@@ -21,7 +21,10 @@ import time
 app = Flask(__name__)
 port = 8000
 CORS(app)
-SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+SCOPES = [
+    "https://www.googleapis.com/auth/gmail.compose",
+    "https://www.googleapis.com/auth/gmail.modify"
+]
 
 client = pymongo.MongoClient("mongodb+srv://TEST:12345@mubustest.yfyj3.mongodb.net")
 db = client["ZORA"]
@@ -336,6 +339,96 @@ def get_latest_code():
             "status": "error",
             "message": "No authorization code found in the database"
         }), 404
+
+
+@app.route("/save-draft", methods=["POST"])
+def save_draft():
+    try:
+        # Get the request data
+        data = request.json
+        
+        # Extract the token data and draft details
+        token_data = data["token_json"]
+        to_email = data["to_email"]
+        subject = data["subject"]
+        body = data["body"]
+        
+        # Load the token into credentials
+        creds = Credentials.from_authorized_user_info(token_data)
+        
+        # Build the Gmail API service
+        service = build("gmail", "v1", credentials=creds)
+        
+        # Create the email content
+        message = f"To: {to_email}\r\nSubject: {subject}\r\n\r\n{body}"
+        encoded_message = base64.urlsafe_b64encode(message.encode("utf-8")).decode("utf-8")
+        
+        # Prepare the draft
+        draft_body = {
+            "message": {
+                "raw": encoded_message
+            }
+        }
+        
+        # Save the draft
+        draft = service.users().drafts().create(userId="me", body=draft_body).execute()
+        
+        return jsonify({"message": "Draft saved successfully", "draftId": draft["id"]}), 201
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/save-draft-reply", methods=["POST"])
+def save_draft_reply():
+    try:
+        # Get the request data
+        data = request.json
+        
+        # Extract the token data and draft details
+        token_data = data["token_json"]
+        to_email = data["to_email"]
+        subject = data["subject"]
+        body = data["body"]
+        message_id = data.get("message_id")  # The ID of the message being replied to
+        thread_id = data.get("thread_id")  # The thread ID of the message being replied to
+
+        # Load the token into credentials
+        creds = Credentials.from_authorized_user_info(token_data)
+        
+        # Build the Gmail API service
+        service = build("gmail", "v1", credentials=creds)
+        
+        # Create the email content
+        message = f"To: {to_email}\r\n"
+        message += f"Subject: {subject}\r\n"
+        if message_id:
+            message += f"In-Reply-To: <{message_id}>\r\n"
+            message += f"References: <{message_id}>\r\n"
+        message += f"\r\n{body}"
+        
+        # Encode the message
+        encoded_message = base64.urlsafe_b64encode(message.encode("utf-8")).decode("utf-8")
+        
+        # Prepare the draft
+        draft_body = {
+            "message": {
+                "raw": encoded_message,
+                "threadId": thread_id  # Attach to the existing thread
+            }
+        }
+        
+        # Save the draft
+        draft = service.users().drafts().create(userId="me", body=draft_body).execute()
+        
+        return jsonify({
+            "message": "Draft saved successfully",
+            "draftId": draft["id"],
+            "threadId": draft["message"]["threadId"]
+        }), 201
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=port, debug=True)
