@@ -427,6 +427,7 @@ def save_draft_reply():
         }), 201
     
     except Exception as e:
+        print(str(e))
         return jsonify({"error": str(e)}), 500
 
 
