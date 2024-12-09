@@ -44,7 +44,39 @@ email_synonyms=["read the latest mail","read latest mail","read latest email","r
 reply_synonyms=['reply','reply to latest mail','reply to latest mail','reply the latest mail','reply latest mail','reply mail','reply the mail','reply the last mail','reply last mail']
 subject_mail_synonyms=['subject','read subject']
 
+def create_gmail_service(token_json):
+    creds = Credentials.from_authorized_user_info(token_json, SCOPES)
+    
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    
+    service = build('gmail', 'v1', credentials=creds)
+    return service
 
+# Function to send an email using the Gmail API
+def send_reply(service, to_email, subject, body, message_id, thread_id):
+    message = create_message(to_email, subject, body, message_id)
+    
+    try:
+        # Send the reply email
+        response = service.users().messages().send(userId="me", body=message).execute()
+        return response
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return None
+
+# Function to create an email message
+def create_message(to, subject, body, message_id):
+    message_content = f"To: {to}\nSubject: Re: {subject}\nIn-Reply-To: {message_id}\nReferences: {message_id}\n\n{body}"
+    
+    raw_message = base64.urlsafe_b64encode(message_content.encode('utf-8')).decode('utf-8')
+    
+    message = {
+        'raw': raw_message,
+        'threadId': message_id
+    }
+    
+    return message
 
 def get_email_body(message):
     """Extract and decode the email body."""
@@ -187,6 +219,35 @@ def get_auth_url():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route('/send-reply', methods=['POST'])
+def send_reply_api():
+    data = request.get_json()
+
+    token_json = data.get('token_json')
+    to_email = data.get('to_email')
+    subject = data.get('subject')
+    body = data.get('body')
+    message_id = data.get('message_id')
+    thread_id = data.get('thread_id')
+
+    if not all([token_json, to_email, subject, body, message_id, thread_id]):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    try:
+        # Create Gmail service using the provided token
+        service = create_gmail_service(token_json)
+        
+        # Send the reply
+        response = send_reply(service, to_email, subject, body, message_id, thread_id)
+        
+        if response:
+            return jsonify({'message': 'Reply sent successfully', 'data': response}), 200
+        else:
+            return jsonify({'error': 'Failed to send reply'}), 500
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route("/authorize", methods=["POST"])
 def authorize_code():
