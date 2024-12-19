@@ -299,7 +299,7 @@ def fetch_emails():
         # Call the Gmail API
         service = build("gmail", "v1", credentials=creds)
 
-        results = service.users().messages().list(userId="me", labelIds=["INBOX"], q="is:unread").execute()
+        results = service.users().messages().list(userId="me", labelIds=["INBOX"]).execute()
         messages = results.get("messages", [])
 
         if not messages:
